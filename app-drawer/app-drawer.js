@@ -230,7 +230,12 @@ Polymer({
     /**
      * Disables swiping on the drawer.
      */
-    disableSwipe: {type: Boolean, value: false}
+    disableSwipe: { type: Boolean, value: false },
+    
+    /**
+     * Swipable area of viewport in percentage
+     */
+    swipableArea: { type: Number, value: 30 }
   },
 
   observers: [
@@ -254,7 +259,7 @@ Polymer({
 
       // Only listen for horizontal track so you can vertically scroll
       // inside the drawer.
-      this.listen(this, 'track', '_track');
+      this.listen(document, 'track', '_track');
       this.setScrollDirection('y');
     });
 
@@ -320,8 +325,18 @@ Polymer({
     }
   },
 
-  _track: function(event) {
-    if (this.persistent || this.disableSwipe) {
+  _track: function (event) {
+    if (!this.opened && event.detail.state === 'start' &&
+      event.detail.x > document.body.clientWidth * this.swipableArea / 100) {
+      this._preventSwipe = true;
+    }
+
+    if (this.opened || event.detail.state === 'start' &&
+      event.detail.x < document.body.clientWidth * this.swipableArea / 100) {
+      this._preventSwipe = false;
+    }
+    
+    if (this.persistent || this.disableSwipe || this._preventSwipe) {
       return;
     }
 
@@ -380,7 +395,7 @@ Polymer({
       // to be GC'd.
       var trackDetails = this._trackDetails;
       this._trackDetails = null;
-
+      console.log('trackdetails is', trackDetails);
       this._flingDrawer(event, trackDetails);
       if (this._drawerState === this._DRAWER_STATE.FLINGING) {
         return;
